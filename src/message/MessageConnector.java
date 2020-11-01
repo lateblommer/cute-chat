@@ -19,11 +19,7 @@ public class MessageConnector {
     @OnOpen
     public void onOpen(@PathParam("clientId") String clientId, Session session) throws IOException {
         this.clientId = clientId;
-        MessageClient existsClient = conversation.findClient(clientId);
-        if (existsClient != null) {
-            //
-            conversation.unregisterClient(existsClient);
-        }
+        conversation.unregisterClient(conversation.findClient(clientId));
         conversation.registerClient(new MessageClient(clientId, session));
         System.out.println("新的客户端已登入：" + clientId);
     }
@@ -37,10 +33,8 @@ public class MessageConnector {
     @OnMessage
     public void onMessage(String message) throws IOException {
         System.out.println("收到消息：" + message);
-        //
         TextMessage textMessage = new Gson().fromJson(message, TextMessage.class);
         textMessage.time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-        //
         conversation.dispatchMessage(textMessage);
     }
 

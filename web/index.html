@@ -24,8 +24,7 @@
         body > div {
             display: flex;
             flex-direction: column;
-            max-width: 1000px;
-            min-width: 800px;
+            width: 600px;
             margin: 0 auto;
             border: 1px solid #f2f2f2;
             border-radius: 8px;
@@ -133,9 +132,13 @@
     </div>
 </div>
 <script>
+    window.addEventListener('beforeunload', function () {
+        socket && socket.close();
+    });
+
     const messageInput = document.querySelector('#messageInput'),
         message_area = document.querySelector('#message_area'),
-        clientId = localStorage.clientId || (Date.now() + Math.random() * 1000000 ^ 0),
+        clientId = localStorage.clientId || (Date.now() + '' + (Math.random() * 1000000 ^ 0)),
         name = localStorage.name || prompt('请输入一个昵称'),
         server = `ws://${location.hostname}:${location.port}${location.pathname}message/${clientId}`;
 
@@ -146,50 +149,63 @@
     let socket = null,
         shifted = false;
     document.addEventListener('keydown', e => {
+        console.log('down', e.key);
         if (e.key === 'Shift') {
             shifted = true;
         }
     });
     document.addEventListener('keyup', e => {
+        console.log('up', e.key);
         if (e.key === 'Shift') {
-            shifted = true;
+            shifted = false;
         }
     });
     messageInput.addEventListener('keypress', e => {
-        if (!shifted && e.key === 'Enter') return requestAnimationFrame(send);
+        console.log('keypress', e.key);
+        if (!shifted && e.key === 'Enter') {
+            e.preventDefault();
+            send();
+        }
     });
 
-    function createSocket() {
+    function createSocket(onopen) {
         socket = new WebSocket(server);
         socket.onclose = socket.onerror = e => {
             socket = null;
         };
+        socket.onopen = onopen;
         socket.onmessage = e => {
             const data = JSON.parse(e.data);
             appendMessage(data);
         };
     }
 
-    createSocket();
+    createSocket(function () {
+        console.log('连接成功');
+    });
 
     function send() {
         if (!socket) {
-            createSocket();
+            createSocket(doSend);
+        } else {
+            doSend();
         }
 
-        const value = messageInput.value.trim();
-        messageInput.value = '';
-        if (!value) return;
-        const data = {
-            text: value,
-            from: {
-                clientId: clientId,
-                name: name
-            },
-            time: ''
-        };
-        socket.send(JSON.stringify(data));
-        appendMessage(data, true);
+        function doSend() {
+            const value = messageInput.value.trim();
+            messageInput.value = '';
+            if (!value) return;
+            const data = {
+                text: value,
+                from: {
+                    clientId: clientId,
+                    name: name
+                },
+                time: ''
+            };
+            socket.send(JSON.stringify(data));
+            appendMessage(data, true);
+        }
     }
 
     function appendMessage(data, isSelf) {
