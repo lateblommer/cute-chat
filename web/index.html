@@ -139,12 +139,12 @@
         name = localStorage.name || prompt('请输入一个昵称'),
         server = `ws://${location.hostname}:${location.port}${location.pathname}message/${clientId}`;
 
-    let socket = null;
     localStorage.setItem('clientId', clientId);
     localStorage.setItem('name', name);
     document.title = name;
 
-    let shifted = false;
+    let socket = null,
+        shifted = false;
     document.addEventListener('keydown', e => {
         if (e.key === 'Shift') {
             shifted = true;
